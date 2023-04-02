@@ -1,0 +1,7 @@
+# comment
+LICENSE
+README.md
+.gitignore
+.git/*
+docker/*
+vendor/*
