@@ -1,12 +1,15 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/jbullfrog81/fishing-buddy-service/internal/app/clients"
-	redis "github.com/redis/go-redis/v9"
 )
 
 func GetRoot(w http.ResponseWriter, r *http.Request) {
@@ -19,24 +22,41 @@ func GetHello(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Hello, HTTP!\n")
 }
 
-type Weather struct {
+type WeatherController struct {
 	Cache *redis.Client
+	Ctx   context.Context
 }
 
-func (wthr *Weather) GetWeather(w http.ResponseWriter, r *http.Request) {
+//NewWeatherController constructs a new WeatherController,
+//ensuring that the dependencies are valid
+func NewWeatherController() *WeatherController {
+	return &WeatherController{}
+}
+
+func (wthr *WeatherController) GetWeather(w http.ResponseWriter, r *http.Request) {
+
+	//weather forecast cache key
+	//wther-forecast-<weather office>-<grid x>-<grid y>-<YYYY>-<MM>-<DD>-<HH>
+	//wther-forecast-<weather office>-<grid x>-<grid y>-<EPOCH UTC rounded to nearest hour>
+	cTime := time.Now()
+	tRound := cTime.Round(time.Hour).UTC().Unix()
+
+	wthrCacheKey := "wthr-forecast-eax-32-32-" + strconv.FormatInt(tRound, 10)
+	fmt.Printf("The weather cache key is:%s\n", wthrCacheKey)
 
 	//TODO - get results from cache correctly
 	//TODO - add context
-	val, err := wthr.Cache.Get(nil, "id1234").Result()
+	val, err := wthr.Cache.Get(wthr.Ctx, wthrCacheKey).Result()
 	if err != nil {
 		if err == redis.Nil {
+			fmt.Printf("Cache entry not found!\n")
 			//Not in cache get from the weather service
-			clients.Weather()
+			wthrData := clients.Weather()
 
 			//TODO - store results in cache
 			//TODO - add context
 			//TODO - add expiration to cache key
-			err := wthr.Cache.Set(nil, "key", "value", 0).Err()
+			err := wthr.Cache.Set(wthr.Ctx, wthrCacheKey, wthrData, 0).Err()
 			if err != nil {
 				panic(err)
 			}
@@ -46,6 +66,8 @@ func (wthr *Weather) GetWeather(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Print weather data
-	fmt.Print(val)
+	//fmt.Printf("Value from cache:%s", val)
+
+	fmt.Fprintf(w, "weather is, %s\n", val)
 
 }

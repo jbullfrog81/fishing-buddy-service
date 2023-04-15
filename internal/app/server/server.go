@@ -21,6 +21,10 @@ import (
 //	*App
 //}
 
+//func New() (*Server, error) {
+//
+//}
+
 //For some reason calling this does note work :thinking:
 
 func ServerStart() error {

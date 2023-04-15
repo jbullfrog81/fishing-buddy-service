@@ -1,12 +1,15 @@
 package clients
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
 const (
@@ -17,6 +20,27 @@ const (
 	//URI path for the Hourly Forecast
 	nwsAPIHourlyForecastURI = "/forecast/hourly"
 )
+
+//NewCacheClient constructs a new redis client
+func NewCacheClient(ctx context.Context) *redis.Client {
+
+	// Create a new Redis client
+	cache := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379", // Redis server address
+		Password: "",               // Redis server password (if any)
+		DB:       0,                // Redis database index
+	})
+
+	_, err := cache.Ping(ctx).Result()
+	if err != nil {
+		fmt.Println("CACHE CLIENT not healthy")
+	}
+
+	fmt.Println("CACHE CLIENT not healthy")
+
+	//TODO - add error return
+	return cache
+}
 
 type weatherClientHeaders struct {
 	UserAgent string `json:"user-agent"`
@@ -44,7 +68,7 @@ type weatherClientHourlyResponse struct {
 }
 
 //TODO - add input and return signature
-func Weather() {
+func Weather() string {
 	//Set the request header with a user-agent field.
 	//This is required for authentication of the request by the National Weather Service API.
 	//Documentation says in the future the user-agent field to be replaced by API key but no known date
@@ -55,7 +79,7 @@ func Weather() {
 	//If you include contact information (website or email), we can contact you if your string is associated to a security event.
 	//This will be replaced with an API key in the future.
 	var weatherHeaders = weatherClientHeaders{
-		UserAgent: "JeremiahBrooks, jeremiah.brooks.987@gmail.com@gmail.com",
+		UserAgent: "JeremiahBrooks, jeremiah.brooks.987gmail.com",
 	}
 	//headers.userAgent = "JeremiahBrooks, jeremiah.brooks.987@gmail.com@gmail.com"
 
@@ -135,7 +159,8 @@ func Weather() {
 		//TODO - add return and structured logging
 		fmt.Println(err)
 	}
-	//TODO - add return
+	//TODO - add return w/o formatted data
 	fmt.Print(string(b))
+	return string(b)
 
 }
