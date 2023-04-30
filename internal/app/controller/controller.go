@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -53,13 +54,20 @@ func (wthr *WeatherController) GetWeather(w http.ResponseWriter, r *http.Request
 			//Not in cache get from the weather service
 			wthrData := clients.Weather()
 
-			//TODO - store results in cache
-			//TODO - add context
+			wthrDataMar, err := json.Marshal(wthrData)
+			if err != nil {
+				//TODO - add return and structured logging
+				fmt.Println(err)
+			}
+
 			//TODO - add expiration to cache key
-			err := wthr.Cache.Set(wthr.Ctx, wthrCacheKey, wthrData, 0).Err()
+			err = wthr.Cache.Set(wthr.Ctx, wthrCacheKey, wthrDataMar, 0).Err()
 			if err != nil {
 				panic(err)
 			}
+
+			//TODO - Better engineer this return when there is an error
+			val, err = wthr.Cache.Get(wthr.Ctx, wthrCacheKey).Result()
 		}
 		//TODO - add structured logging
 		fmt.Println(err)

@@ -3,5 +3,7 @@ LICENSE
 README.md
 .gitignore
 .git/*
-docker/*
+./docker
 vendor/*
+compose.yaml
+dockerfile

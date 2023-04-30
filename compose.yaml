@@ -1,4 +1,14 @@
 services:
+  app:
+    build:
+      dockerfile: ./dockerfile
+      context: .
+      #volumes:
+      #  - ..:/opt/app/source
+    depends_on:
+      - cache
+    ports:
+      - '8080:8080'
   cache:
     image: redis:6.2-alpine
     restart: always
