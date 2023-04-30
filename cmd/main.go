@@ -52,6 +52,8 @@ func main() {
 	//	"time", time.Second,
 	//)
 
+	//TODO - Start utilizing environment variable configs and config struct
+
 	//weather := &controller.WeatherController{cache: cacheClient}
 	weather := controller.NewWeatherController()
 	weather.Cache = clients.NewCacheClient(ctx)
