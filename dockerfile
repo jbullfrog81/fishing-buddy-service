@@ -1,4 +1,4 @@
-FROM golang:1.20-alpine3.17
+FROM golang:1.21-alpine3.19
 
 RUN mkdir -p /opt/github.com/jbullfrog81/fishing-buddy-service
 

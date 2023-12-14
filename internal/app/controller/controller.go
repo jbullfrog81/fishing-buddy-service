@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/jbullfrog81/fishing-buddy-service/internal/app/clients"
+	"github.com/jbullfrog81/fishing-buddy-service/internal/app/requests"
+	"github.com/jbullfrog81/fishing-buddy-service/internal/app/stores"
 )
 
 func GetRoot(w http.ResponseWriter, r *http.Request) {
@@ -77,5 +80,89 @@ func (wthr *WeatherController) GetWeather(w http.ResponseWriter, r *http.Request
 	//fmt.Printf("Value from cache:%s", val)
 
 	fmt.Fprintf(w, "weather is, %s\n", val)
+
+}
+
+type FishingController struct {
+	IfishStore *stores.IfishStore
+	Logger     *slog.Logger
+}
+
+//NewFishingController constructs a new FishingController ensuring that the dependencies are valid
+func NewFishingController(ifishStore *stores.IfishStore, logger *slog.Logger) *FishingController {
+	return &FishingController{
+		IfishStore: ifishStore,
+		Logger:     logger,
+	}
+}
+
+// FishOn - takes in the coordinates of where a fish is caught
+func (c *FishingController) PostCatch(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	var req requests.PostCatchRequestBody
+
+	//TODO - decode and validate request headers
+
+	err := requests.ValidateRequestHeader(r.Header.Get("Content-Type"), "application/json")
+	if err != nil {
+		c.Logger.ErrorContext(ctx, "Invalid request header found")
+		http.Error(w, fmt.Errorf("Invalid header Content-Type").Error(), http.StatusUnsupportedMediaType)
+	}
+
+	// Enforce a maximum read of 1MB from the response body and if greater then
+	// Decode() will return error "http: request body too large".
+	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
+
+	// Decode request body
+	rdc := json.NewDecoder(r.Body)
+	// Do not allow unexpected fields. When unknown fields are experienced then
+	// Decode() will return error "json: unknown field ..."
+	rdc.DisallowUnknownFields()
+
+	rdc.Decode(&req)
+	if err != nil {
+		c.Logger.ErrorContext(ctx, "Invalid request body found")
+		http.Error(w, fmt.Errorf("Invalid request body").Error(), http.StatusBadRequest)
+		return
+	}
+
+	c.Logger.Info("successful POST catch request",
+		"latitude", req.Coordinates.Latitude,
+		"longitude", req.Coordinates.Longitude,
+		"fish_species_id", req.FishSpeciesId,
+		"fisherman_id", req.FishermanId,
+	)
+
+	//TODO - validate request
+
+	ok := req.FishSpeciesId.IsValid()
+	if !ok {
+		c.Logger.ErrorContext(ctx, "Invalid fish species id in request body")
+		http.Error(w, fmt.Errorf("Invalid request body").Error(), http.StatusBadRequest)
+		return
+	}
+
+	//fishSpeciesId := 1
+
+	//fishermanId := 1
+
+	//var coordinates = stores.Coordinates{
+	//	Latitude:  1,
+	//	Longitude: 1,
+	//}
+
+	err = c.IfishStore.NewCatch(ctx, req.FishSpeciesId, req.FishermanId, req.Coordinates)
+	if err != nil {
+		c.Logger.ErrorContext(ctx, "error with the iFish database",
+			"error", err,
+		)
+		http.Error(w, fmt.Errorf("Server Error").Error(), http.StatusInternalServerError)
+		return
+	}
+
+	//TODO: Proper response
+	fmt.Fprintf(w, "ok\n")
 
 }

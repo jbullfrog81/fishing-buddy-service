@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/jbullfrog81/fishing-buddy-service/internal/app/controller"
+	"github.com/jbullfrog81/fishing-buddy-service/internal/app/stores"
 )
 
 //type Controllers struct {
@@ -24,6 +25,20 @@ import (
 //func New() (*Server, error) {
 //
 //}
+
+type Stores struct {
+	Ifish *stores.IfishStore
+}
+
+type App struct {
+	Stores *Stores
+}
+
+func NewApp() *App {
+	return &App{
+		Stores: &Stores{},
+	}
+}
 
 //For some reason calling this does note work :thinking:
 
